@@ -1,10 +1,11 @@
 using Confluent.Kafka;
-using KafkaServices.JsonModels;
+using KafkaSerialisation.JsonModels;
+using KafkaSerialisation.Services;
 using KafkaServices.ProtoModels;
-using KafkaServices.Services;
 using Microsoft.AspNetCore.Mvc;
+using System.Text.Json;
 
-namespace ProtofbuffAPI.Controllers
+namespace KafkaSerialisation.API.Controllers
 {
     [ApiController]
     [Route("[controller]")]
@@ -13,12 +14,33 @@ namespace ProtofbuffAPI.Controllers
         private readonly ILogger<TestController> _logger;
         private readonly IKafkaProtoService _kafkaProtoService;
         private readonly IKafkaJsonService _kafkaJsonService;
+        private readonly IKafkaService _kafkaService;
 
-        public TestController(ILogger<TestController> logger, IKafkaProtoService kafkaProtoService, IKafkaJsonService kafkaJsonService)
+        public TestController(ILogger<TestController> logger,
+            IKafkaProtoService kafkaProtoService,
+            IKafkaJsonService kafkaJsonService,
+            IKafkaService kafkaService)
         {
             _logger = logger;
             _kafkaProtoService = kafkaProtoService;
             _kafkaJsonService = kafkaJsonService;
+            _kafkaService = kafkaService;
+        }
+
+        [HttpPost]
+        [Route("Schemaless")]
+        public async Task<IActionResult> PostSchemaless([FromBody] TestModelJson model)
+        {
+            _logger.LogInformation($"Model:{model}");
+            var message = new Message<string, string>
+            {
+                Key = Guid.NewGuid().ToString(),
+                Value = JsonSerializer.Serialize(model)
+            };
+
+            await _kafkaService.ProduceMessage("KafakProto", message);
+
+            return Ok();
         }
 
         [HttpPost]
@@ -26,9 +48,9 @@ namespace ProtofbuffAPI.Controllers
         public async Task<IActionResult> PostJson([FromBody] TestModelJson model)
         {
             _logger.LogInformation($"Model:{model}");
-            var message = new Message<string, TestModelJson> 
-            { 
-                Key = "KafkaJson",
+            var message = new Message<string, TestModelJson>
+            {
+                Key = Guid.NewGuid().ToString(),
                 Value = model
             };
 
@@ -45,7 +67,7 @@ namespace ProtofbuffAPI.Controllers
             _logger.LogInformation($"Model:{model}");
             var message = new Message<string, TestModelProto>
             {
-                Key = "KafakProto",
+                Key = Guid.NewGuid().ToString(),
                 Value = model
             };
 

@@ -1,5 +1,5 @@
-using KafkaServices.Configuration;
-using KafkaServices.Services;
+using KafkaSerialisation.Configuration;
+using KafkaSerialisation.Services;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -12,8 +12,9 @@ builder.Services.AddSwaggerGen();
 
 builder.Services.Configure<KafkaOptions>(builder.Configuration.GetSection(KafkaOptions.SectionName));
 
-builder.Services.AddTransient<IKafkaJsonService, KafkaJsonService>();
-builder.Services.AddTransient<IKafkaProtoService, KafkaProtoService>();
+builder.Services.AddSingleton<IKafkaJsonService, KafkaJsonService>();
+builder.Services.AddSingleton<IKafkaProtoService, KafkaProtoService>();
+builder.Services.AddSingleton<IKafkaService, KafkaService>();
 
 var app = builder.Build();
 

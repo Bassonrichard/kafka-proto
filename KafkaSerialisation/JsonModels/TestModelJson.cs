@@ -1,4 +1,4 @@
-﻿namespace KafkaServices.JsonModels
+﻿namespace KafkaSerialisation.JsonModels
 {
     public class TestModelJson
     {

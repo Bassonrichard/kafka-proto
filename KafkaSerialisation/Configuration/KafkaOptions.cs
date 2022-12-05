@@ -1,4 +1,4 @@
-﻿namespace KafkaServices.Configuration
+﻿namespace KafkaSerialisation.Configuration
 {
     public class KafkaOptions
     {

@@ -1,10 +1,10 @@
 ﻿using BenchmarkDotNet.Attributes;
 using Confluent.Kafka;
-using KafkaServices.Configuration;
-using KafkaServices.JsonModels;
+using KafkaSerialisation.Configuration;
+using KafkaSerialisation.JsonModels;
+using KafkaSerialisation.Services;
 using KafkaServices.ProtoModels;
-using KafkaServices.Services;
-
+using System.Text.Json;
 
 namespace BenchmarkWorker
 {
@@ -15,8 +15,12 @@ namespace BenchmarkWorker
     {
         private IKafkaProtoService _kafkaProtoService;
         private IKafkaJsonService _kafkaJsonService;
+        private IKafkaService _kafkaService;
+
+
         private Message<string, TestModelJson> _jsonMessage;
         private Message<string, TestModelProto> _protoMessage;
+        private Message<string, string> _schemalessMessage;
 
         [GlobalSetup]
         public void GlobalSetup()
@@ -27,16 +31,18 @@ namespace BenchmarkWorker
             .ConfigureServices((hostContext, services) =>
             {
                 services.Configure<KafkaOptions>(hostContext.Configuration.GetSection(KafkaOptions.SectionName));
-                services.AddTransient<IKafkaJsonService, KafkaJsonService>();
-                services.AddTransient<IKafkaProtoService, KafkaProtoService>();
+                services.AddSingleton<IKafkaJsonService, KafkaJsonService>();
+                services.AddSingleton<IKafkaProtoService, KafkaProtoService>();
+                services.AddSingleton<IKafkaService, KafkaService>();
             })
             .Build();
 
             _kafkaJsonService = host.Services.GetRequiredService<IKafkaJsonService>();
             _kafkaProtoService = host.Services.GetRequiredService<IKafkaProtoService>();
+            _kafkaService = host.Services.GetRequiredService<IKafkaService>();
             #endregion
 
-            #region Json Setup
+            #region Json setup
             var jsonModel = new TestModelJson
             {
                 Int = 1,
@@ -58,7 +64,7 @@ namespace BenchmarkWorker
 
             _jsonMessage = new Message<string, TestModelJson>
             {
-                Key = "KafkaJson",
+                Key = Guid.NewGuid().ToString(),
                 Value = jsonModel
             };
             #endregion
@@ -88,8 +94,35 @@ namespace BenchmarkWorker
 
             _protoMessage = new Message<string, TestModelProto>
             {
-                Key = "KafakProto",
+                Key = Guid.NewGuid().ToString(),
                 Value = protoModel
+            };
+            #endregion
+
+            #region Schema less setup
+            var schemalessModel = new TestModelJson
+            {
+                Int = 1,
+                Long = 2,
+                Float = 3,
+                Double = 4,
+                String = "string",
+                DateTime = DateTime.UtcNow,
+                BoolModel = new BoolModelJson
+                {
+                    Bool = true
+                },
+                Strings = new List<string>
+                {
+                    "string",
+                    "string"
+                }
+            };
+
+            _schemalessMessage = new Message<string, string>
+            {
+                Key = Guid.NewGuid().ToString(),
+                Value = JsonSerializer.Serialize(schemalessModel)
             };
             #endregion
         }
@@ -97,13 +130,20 @@ namespace BenchmarkWorker
         [Benchmark]
         public async Task JsonSerilization()
         {
-            await _kafkaJsonService.ProduceJsonMessage(Guid.NewGuid().ToString(), _jsonMessage);
+            await _kafkaJsonService.ProduceJsonMessage("KafkaJson", _jsonMessage);
         }
 
         [Benchmark]
         public async Task ProtoSerilization()
         {
-            await _kafkaProtoService.ProduceProtoMessage(Guid.NewGuid().ToString(), _protoMessage);
+            await _kafkaProtoService.ProduceProtoMessage("KafkaProto", _protoMessage);
+
+        }
+
+        [Benchmark]
+        public async Task SchemalessSerilization()
+        {
+            await _kafkaService.ProduceMessage("KafkaSchemaless", _schemalessMessage);
 
         }
     }

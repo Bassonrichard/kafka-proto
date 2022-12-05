@@ -1,6 +1,6 @@
 ﻿using Google.Protobuf;
 
-namespace KafkaServices.JsonModels
+namespace KafkaSerialisation.JsonModels
 {
     public class BoolModelJson
     {

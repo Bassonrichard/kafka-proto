@@ -1,6 +1,6 @@
 using BenchmarkWorker;
-using KafkaServices.Configuration;
-using KafkaServices.Services;
+using KafkaSerialisation.Configuration;
+using KafkaSerialisation.Services;
 
 IHost host = Host.CreateDefaultBuilder(args)
     .ConfigureServices((hostContext, services) =>
@@ -9,6 +9,8 @@ IHost host = Host.CreateDefaultBuilder(args)
 
         services.AddTransient<IKafkaJsonService, KafkaJsonService>();
         services.AddTransient<IKafkaProtoService, KafkaProtoService>();
+        services.AddTransient<IKafkaService, KafkaService>();
+
         services.AddHostedService<Worker>();
     })
     .Build();
