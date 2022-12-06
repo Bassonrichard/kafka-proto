@@ -17,16 +17,14 @@ namespace KafkaSerialisation.Services
     public class KafkaProtoService : IKafkaProtoService
     {
         private readonly KafkaOptions _kafkaOptions;
-        private readonly SchemaRegistryConfig _schemaRegistryConfig;
         private readonly ProducerConfig _producerConfig;
         private readonly ConsumerConfig _consumerConfig;
         private readonly CachedSchemaRegistryClient _cachedSchemaRegistryClient;
 
-        public KafkaProtoService(IOptions<KafkaOptions> kafkaOptions)
+        public KafkaProtoService(IOptions<KafkaOptions> kafkaOptions, CachedSchemaRegistryClient cachedSchemaRegistryClient)
         {
             _kafkaOptions = kafkaOptions.Value;
-            _schemaRegistryConfig = new SchemaRegistryConfig { Url = _kafkaOptions.SchemaRegistryUrl };
-            _cachedSchemaRegistryClient = new CachedSchemaRegistryClient(_schemaRegistryConfig);
+            _cachedSchemaRegistryClient = cachedSchemaRegistryClient;
             _producerConfig = new ProducerConfig { BootstrapServers = _kafkaOptions.BootstrapServers };
             _consumerConfig = new ConsumerConfig
             {

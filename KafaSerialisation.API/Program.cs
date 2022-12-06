@@ -1,3 +1,4 @@
+using Confluent.SchemaRegistry;
 using KafkaSerialisation.Configuration;
 using KafkaSerialisation.Services;
 
@@ -10,11 +11,18 @@ builder.Services.AddControllers();
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen();
 
-builder.Services.Configure<KafkaOptions>(builder.Configuration.GetSection(KafkaOptions.SectionName));
+var kafkaOptions = builder.Configuration.GetSection(KafkaOptions.SectionName);
+builder.Services.Configure<KafkaOptions>(kafkaOptions);
 
-builder.Services.AddSingleton<IKafkaJsonService, KafkaJsonService>();
-builder.Services.AddSingleton<IKafkaProtoService, KafkaProtoService>();
-builder.Services.AddSingleton<IKafkaService, KafkaService>();
+var schemaRegistryConfig = new SchemaRegistryConfig
+{
+    Url = kafkaOptions.GetValue<string>("SchemaRegistryUrl")
+};
+builder.Services.AddSingleton<CachedSchemaRegistryClient>(new CachedSchemaRegistryClient(schemaRegistryConfig));
+
+builder.Services.AddTransient<IKafkaJsonService, KafkaJsonService>();
+builder.Services.AddTransient<IKafkaProtoService, KafkaProtoService>();
+builder.Services.AddTransient<IKafkaService, KafkaService>();
 
 var app = builder.Build();
 

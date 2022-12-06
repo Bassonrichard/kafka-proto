@@ -1,5 +1,6 @@
 ﻿using BenchmarkDotNet.Attributes;
 using Confluent.Kafka;
+using Confluent.SchemaRegistry;
 using KafkaSerialisation.Configuration;
 using KafkaSerialisation.JsonModels;
 using KafkaSerialisation.Services;
@@ -30,10 +31,18 @@ namespace BenchmarkWorker
             var host = Host.CreateDefaultBuilder()
             .ConfigureServices((hostContext, services) =>
             {
-                services.Configure<KafkaOptions>(hostContext.Configuration.GetSection(KafkaOptions.SectionName));
-                services.AddSingleton<IKafkaJsonService, KafkaJsonService>();
-                services.AddSingleton<IKafkaProtoService, KafkaProtoService>();
-                services.AddSingleton<IKafkaService, KafkaService>();
+                var kafkaOptions = hostContext.Configuration.GetSection(KafkaOptions.SectionName);
+                services.Configure<KafkaOptions>(kafkaOptions);
+
+                var schemaRegistryConfig = new SchemaRegistryConfig
+                {
+                    Url = kafkaOptions.GetValue<string>("SchemaRegistryUrl")
+                };
+                services.AddSingleton<CachedSchemaRegistryClient>(new CachedSchemaRegistryClient(schemaRegistryConfig));
+
+                services.AddTransient<IKafkaJsonService, KafkaJsonService>();
+                services.AddTransient<IKafkaProtoService, KafkaProtoService>();
+                services.AddTransient<IKafkaService, KafkaService>();
             })
             .Build();
 
